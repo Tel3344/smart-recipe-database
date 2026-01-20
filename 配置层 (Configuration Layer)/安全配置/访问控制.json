@@ -1,0 +1,36 @@
+// 访问控制中间件
+class AccessControl {
+  static async middleware(request) {
+    const url = new URL(request.url);
+    
+    // 公开API
+    const publicRoutes = [
+      '/api/recipes',
+      '/api/recommend',
+      '/api/categories'
+    ];
+    
+    if (publicRoutes.some(route => url.pathname.startsWith(route))) {
+      return request;
+    }
+    
+    // 需要认证的API
+    const token = request.headers.get('Authorization');
+    if (!token) {
+      return new Response('需要认证', { status: 401 });
+    }
+    
+    // 验证token
+    const isValid = await this.validateToken(token);
+    if (!isValid) {
+      return new Response('无效的认证', { status: 403 });
+    }
+    
+    return request;
+  }
+  
+  static async validateToken(token) {
+    // JWT验证逻辑
+    return true;
+  }
+}
