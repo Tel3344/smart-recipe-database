@@ -1,654 +1,287 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>食刻 · 智能菜谱推荐系统</title>
-    
-    <!-- 图标 -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍳</text></svg>">
-    <link rel="apple-touch-icon" href="图标.png">
-    
-    <!-- PWA -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#2E8B57">
-    <meta name="description" content="智能菜谱推荐系统，根据时令、人数和口味偏好自动推荐营养均衡的菜单">
-    
-    <!-- 字体 -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <!-- 样式 -->
-    <link rel="stylesheet" href="样式.css">
-    
-    <!-- PWA 服务工作者 -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('服务工作者.js').then(registration => {
-                    console.log('ServiceWorker 注册成功:', registration.scope);
-                }).catch(error => {
-                    console.log('ServiceWorker 注册失败:', error);
-                });
-            });
-        }
-    </script>
-</head>
 <body>
-    <!-- 导航栏 -->
-    <nav class="导航栏" id="导航栏">
-        <div class="导航容器">
-            <!-- Logo -->
-            <div class="网站标识">
-                <i class="fas fa-utensils 网站图标"></i>
-                <div>
-                    <h1 class="网站标题">食刻智能菜谱</h1>
-                    <p class="网站副标题">时令智能推荐 · 营养均衡搭配</p>
-                </div>
-            </div>
-            
-            <!-- 主导航 -->
-            <div class="主导航">
-                <a href="#首页" class="导航项 active" data-page="home">
-                    <i class="fas fa-home"></i>
-                    <span>首页</span>
-                </a>
-                <a href="#菜谱库" class="导航项" data-page="recipes">
-                    <i class="fas fa-book-open"></i>
-                    <span>菜谱库</span>
-                </a>
-                <a href="#我的收藏" class="导航项" data-page="favorites">
-                    <i class="fas fa-heart"></i>
-                    <span>我的收藏</span>
-                </a>
-                <a href="#购物车" class="导航项" data-page="shopping">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span>购物车</span>
-                    <span class="徽章" id="购物车数量">0</span>
-                </a>
-            </div>
-            
-            <!-- 用户菜单 -->
-            <div class="用户菜单">
-                <button class="主题切换" id="主题切换" title="切换主题">
-                    <i class="fas fa-moon"></i>
-                </button>
-                <button class="用户按钮" id="用户按钮">
-                    <i class="fas fa-user-circle"></i>
-                    <span>用户中心</span>
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- 主内容区 -->
-    <main class="主容器" id="主容器">
-        <!-- 首页 -->
-        <section class="页面 首页" id="首页">
-            <!-- 欢迎区域 -->
-            <div class="欢迎区">
-                <div class="欢迎内容">
-                    <div class="欢迎文本">
-                        <h2 class="欢迎标题">
-                            <span class="季节标签" id="当前季节">春季</span>
-                            智能菜单推荐
-                        </h2>
-                        <p class="欢迎描述">根据时令、人数、口味，为您智能搭配营养均衡的菜单</p>
-                        
-                        <div class="欢迎统计">
-                            <div class="统计项">
-                                <div class="统计数字" id="菜谱总数">0</div>
-                                <div class="统计标签">精选菜谱</div>
-                            </div>
-                            <div class="统计项">
-                                <div class="统计数字" id="今日推荐">0</div>
-                                <div class="统计标签">今日推荐</div>
-                            </div>
-                            <div class="统计项">
-                                <div class="统计数字">98%</div>
-                                <div class="统计标签">用户好评</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="欢迎插图">
-                        <div class="插图图标">
-                            <i class="fas fa-utensils"></i>
-                            <i class="fas fa-carrot"></i>
-                            <i class="fas fa-fish"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 参数设置面板 -->
-            <div class="设置面板" id="设置面板">
-                <div class="设置卡片">
-                    <div class="卡片头部">
-                        <i class="fas fa-users 卡片图标"></i>
-                        <h3>用餐设置</h3>
-                    </div>
-                    <div class="卡片内容">
-                        <div class="设置项">
-                            <label class="设置标签">
-                                <i class="fas fa-user-friends"></i>
-                                用餐人数
-                            </label>
-                            <div class="人数控制器">
-                                <button class="数量按钮 减少" onclick="调整人数(-1)">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                                <input type="number" id="用餐人数" value="6" min="1" max="20" readonly>
-                                <button class="数量按钮 增加" onclick="调整人数(1)">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </div>
-                            <div class="人数提示">适合家庭聚餐的完美人数</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="设置卡片">
-                    <div class="卡片头部">
-                        <i class="fas fa-calendar-alt 卡片图标"></i>
-                        <h3>时令选择</h3>
-                    </div>
-                    <div class="卡片内容">
-                        <div class="设置项">
-                            <label class="设置标签">
-                                <i class="fas fa-leaf"></i>
-                                当前季节
-                            </label>
-                            <div class="季节选择器">
-                                <div class="季节选项" data-season="春季" onclick="选择季节('春季')">
-                                    <i class="fas fa-seedling"></i>
-                                    <span>春季</span>
-                                </div>
-                                <div class="季节选项" data-season="夏季" onclick="选择季节('夏季')">
-                                    <i class="fas fa-sun"></i>
-                                    <span>夏季</span>
-                                </div>
-                                <div class="季节选项" data-season="秋季" onclick="选择季节('秋季')">
-                                    <i class="fas fa-leaf"></i>
-                                    <span>秋季</span>
-                                </div>
-                                <div class="季节选项" data-season="冬季" onclick="选择季节('冬季')">
-                                    <i class="fas fa-snowflake"></i>
-                                    <span>冬季</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="设置项">
-                            <label class="设置标签">
-                                <i class="fas fa-cloud-sun"></i>
-                                天气情况
-                            </label>
-                            <select id="天气选择" class="下拉选择">
-                                <option value="任意">任意天气</option>
-                                <option value="晴天">晴天 · 适合清爽菜品</option>
-                                <option value="阴天">阴天 · 适合温热菜品</option>
-                                <option value="雨天">雨天 · 适合暖身菜品</option>
-                                <option value="寒冷">寒冷 · 适合滋补菜品</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="设置卡片">
-                    <div class="卡片头部">
-                        <i class="fas fa-heart 卡片图标"></i>
-                        <h3>饮食偏好</h3>
-                    </div>
-                    <div class="卡片内容">
-                        <div class="设置项">
-                            <label class="设置标签">
-                                <i class="fas fa-utensil-spoon"></i>
-                                口味偏好
-                            </label>
-                            <div class="标签选择器" id="口味标签">
-                                <span class="标签" data-value="无限制" onclick="切换标签(this)">无限制</span>
-                                <span class="标签" data-value="偏辣" onclick="切换标签(this)">🌶️ 偏辣</span>
-                                <span class="标签" data-value="偏甜" onclick="切换标签(this)">🍬 偏甜</span>
-                                <span class="标签" data-value="清淡" onclick="切换标签(this)">🍃 清淡</span>
-                            </div>
-                        </div>
-                        <div class="设置项">
-                            <label class="设置标签">
-                                <i class="fas fa-seedling"></i>
-                                特殊需求
-                            </label>
-                            <div class="标签选择器" id="需求标签">
-                                <span class="标签" data-value="素食" onclick="切换标签(this)">🥬 素食</span>
-                                <span class="标签" data-value="低脂" onclick="切换标签(this)">🥑 低脂</span>
-                                <span class="标签" data-value="快手菜" onclick="切换标签(this)">⚡ 快手菜</span>
-                                <span class="标签" data-value="儿童餐" onclick="切换标签(this)">👶 儿童餐</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 生成按钮 -->
-            <div class="生成区域">
-                <button class="生成按钮" onclick="生成菜单()">
-                    <i class="fas fa-magic 生成图标"></i>
-                    <div class="生成文本">
-                        <div class="生成标题">智能生成菜单</div>
-                        <div class="生成副标题">一键生成完美搭配</div>
-                    </div>
-                </button>
-            </div>
-
-            <!-- 加载状态 -->
-            <div id="加载状态" class="加载状态">
-                <div class="加载内容">
-                    <div class="加载动画">
-                        <div class="加载转轮"></div>
-                        <div class="加载点"></div>
-                        <div class="加载点"></div>
-                        <div class="加载点"></div>
-                    </div>
-                    <div class="加载文本">
-                        <p class="加载标题">正在为您智能搭配美味菜单...</p>
-                        <p class="加载提示">基于当前季节和偏好进行优化搭配</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 推荐菜单区域 -->
-            <div class="菜单区域" id="菜单区域">
-                <div class="区域头部">
-                    <div class="头部内容">
-                        <h2 class="区域标题">
-                            <i class="fas fa-concierge-bell 标题图标"></i>
-                            为您推荐的菜单
-                        </h2>
-                        <div class="菜单信息">
-                            <div class="信息项">
-                                <i class="far fa-calendar 信息图标"></i>
-                                <span id="菜单日期">今天</span>
-                            </div>
-                            <div class="信息项">
-                                <i class="fas fa-users 信息图标"></i>
-                                <span id="菜单人数">6</span>人份
-                            </div>
-                            <div class="信息项">
-                                <i class="fas fa-clock 信息图标"></i>
-                                总耗时: <span id="总耗时">85</span>分钟
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="头部操作">
-                        <button class="操作按钮" onclick="重新生成()">
-                            <i class="fas fa-redo"></i>
-                            重新生成
-                        </button>
-                    </div>
-                </div>
-
-                <div class="菜单网格" id="菜单网格">
-                    <!-- 菜单卡片将通过JavaScript动态生成 -->
-                </div>
-
-                <!-- 营养信息 -->
-                <div class="营养卡片">
-                    <div class="营养头部">
-                        <i class="fas fa-apple-alt 营养图标"></i>
-                        <h3>营养分析</h3>
-                        <button class="营养详情按钮" onclick="显示营养详情()">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
-                    </div>
-                    <div class="营养内容">
-                        <div class="营养项">
-                            <div class="营养标签">总热量</div>
-                            <div class="营养值" id="总热量">1850</div>
-                            <div class="营养单位">大卡</div>
-                            <div class="营养进度">
-                                <div class="进度条" style="width: 75%;"></div>
-                            </div>
-                        </div>
-                        <div class="营养项">
-                            <div class="营养标签">蛋白质</div>
-                            <div class="营养值" id="蛋白质">85</div>
-                            <div class="营养单位">克</div>
-                            <div class="营养进度">
-                                <div class="进度条" style="width: 90%;"></div>
-                            </div>
-                        </div>
-                        <div class="营养项">
-                            <div class="营养标签">碳水化合物</div>
-                            <div class="营养值" id="碳水化合物">210</div>
-                            <div class="营养单位">克</div>
-                            <div class="营养进度">
-                                <div class="进度条" style="width: 70%;"></div>
-                            </div>
-                        </div>
-                        <div class="营养项">
-                            <div class="营养标签">脂肪</div>
-                            <div class="营养值" id="脂肪">65</div>
-                            <div class="营养单位">克</div>
-                            <div class="营养进度">
-                                <div class="进度条" style="width: 50%;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="营养评价" id="营养评价">
-                        <i class="fas fa-check-circle 评价图标"></i>
-                        <span>营养均衡，搭配合理</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 导出功能区 -->
-            <div class="导出区域">
-                <div class="区域头部">
-                    <h2 class="区域标题">
-                        <i class="fas fa-file-export 标题图标"></i>
-                        菜单导出
-                    </h2>
-                    <p class="区域描述">将您的菜单导出为各种格式，方便使用</p>
-                </div>
-                
-                <div class="导出选项" id="导出选项">
-                    <button class="导出按钮" onclick="导出PDF()">
-                        <div class="导出图标">
-                            <i class="fas fa-file-pdf"></i>
-                        </div>
-                        <div class="导出文本">
-                            <div class="导出标题">PDF文档</div>
-                            <div class="导出描述">适合打印</div>
-                        </div>
-                    </button>
-                    
-                    <button class="导出按钮" onclick="导出图片()">
-                        <div class="导出图标">
-                            <i class="fas fa-image"></i>
-                        </div>
-                        <div class="导出文本">
-                            <div class="导出标题">精美图片</div>
-                            <div class="导出描述">分享到社交</div>
-                        </div>
-                    </button>
-                    
-                    <button class="导出按钮" onclick="生成购物清单()">
-                        <div class="导出图标">
-                            <i class="fas fa-shopping-cart"></i>
-                        </div>
-                        <div class="导出文本">
-                            <div class="导出标题">购物清单</div>
-                            <div class="导出描述">采购指南</div>
-                        </div>
-                    </button>
-                    
-                    <button class="导出按钮" onclick="分享菜单()">
-                        <div class="导出图标">
-                            <i class="fas fa-share-alt"></i>
-                        </div>
-                        <div class="导出文本">
-                            <div class="导出标题">分享菜单</div>
-                            <div class="导出描述">发送给朋友</div>
-                        </div>
-                    </button>
-                    
-                    <button class="导出按钮" onclick="保存收藏()">
-                        <div class="导出图标">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <div class="导出文本">
-                            <div class="导出标题">收藏菜单</div>
-                            <div class="导出描述">以后使用</div>
-                        </div>
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- 菜谱库页面 -->
-        <section class="页面 菜谱库" id="菜谱库" style="display: none;">
-            <div class="页面头部">
-                <h2 class="页面标题">
-                    <i class="fas fa-book-open"></i>
-                    菜谱库
-                </h2>
-                <div class="页面操作">
-                    <div class="搜索框">
-                        <i class="fas fa-search 搜索图标"></i>
-                        <input type="text" id="菜谱搜索" placeholder="搜索菜谱...">
-                    </div>
-                    <button class="筛选按钮" onclick="显示筛选面板()">
-                        <i class="fas fa-filter"></i>
-                        筛选
-                    </button>
-                </div>
-            </div>
-
-            <div class="筛选面板" id="筛选面板" style="display: none;">
-                <!-- 筛选条件将动态生成 -->
-            </div>
-
-            <div class="菜谱网格" id="菜谱网格">
-                <!-- 菜谱卡片将动态生成 -->
-            </div>
-
-            <div class="分页控件" id="分页控件">
-                <!-- 分页按钮将动态生成 -->
-            </div>
-        </section>
-
-        <!-- 我的收藏页面 -->
-        <section class="页面 我的收藏" id="我的收藏" style="display: none;">
-            <div class="页面头部">
-                <h2 class="页面标题">
-                    <i class="fas fa-heart"></i>
-                    我的收藏
-                </h2>
-                <div class="页面操作">
-                    <button class="操作按钮" onclick="清空收藏()">
-                        <i class="fas fa-trash"></i>
-                        清空收藏
-                    </button>
-                </div>
-            </div>
-
-            <div class="收藏网格" id="收藏网格">
-                <!-- 收藏的菜谱将动态生成 -->
-            </div>
-        </section>
-
-        <!-- 购物车页面 -->
-        <section class="页面 购物车" id="购物车" style="display: none;">
-            <div class="页面头部">
-                <h2 class="页面标题">
-                    <i class="fas fa-shopping-cart"></i>
-                    购物清单
-                </h2>
-                <div class="页面操作">
-                    <button class="操作按钮" onclick="打印清单()">
-                        <i class="fas fa-print"></i>
-                        打印
-                    </button>
-                    <button class="操作按钮 主要" onclick="清空购物车()">
-                        <i class="fas fa-trash"></i>
-                        清空
-                    </button>
-                </div>
-            </div>
-
-            <div class="购物清单" id="购物清单">
-                <!-- 购物清单将动态生成 -->
-            </div>
-        </section>
+    <!-- 主内容 -->
+    <main class="主容器">
+        <!-- 你的应用内容 -->
     </main>
-
-    <!-- 页脚 -->
-    <footer class="页脚">
-        <div class="页脚内容">
-            <div class="页脚区块">
-                <h4 class="区块标题">食刻智能菜谱</h4>
-                <p class="区块描述">基于时令的智能菜谱推荐系统</p>
-                <p class="区块描述">让每一餐都恰到好处</p>
-            </div>
-            
-            <div class="页脚区块">
-                <h4 class="区块标题">数据来源</h4>
-                <p class="区块描述">所有菜谱数据开源</p>
-                <p class="区块描述">欢迎贡献您的菜谱</p>
-                <a href="管理工具/菜谱上传工具.html" class="页脚链接">
-                    <i class="fas fa-upload"></i>
-                    贡献菜谱
-                </a>
-            </div>
-            
-            <div class="页脚区块">
-                <h4 class="区块标题">技术支持</h4>
-                <p class="区块描述">GitHub + Cloudflare</p>
-                <p class="区块描述">完全免费使用</p>
-                <a href="https://github.com/你的用户名/smart-recipe-system" class="页脚链接" target="_blank">
-                    <i class="fab fa-github"></i>
-                    GitHub仓库
-                </a>
-            </div>
-            
-            <div class="页脚区块">
-                <h4 class="区块标题">联系我们</h4>
-                <p class="区块描述">如有问题或建议</p>
-                <a href="mailto:your-email@example.com" class="页脚链接">
-                    <i class="fas fa-envelope"></i>
-                    发送邮件
-                </a>
-                <a href="https://github.com/你的用户名/smart-recipe-system/issues" class="页脚链接" target="_blank">
-                    <i class="fas fa-bug"></i>
-                    报告问题
-                </a>
-            </div>
+    
+    <!-- Service Worker 调试面板（开发环境显示） -->
+    <div id="sw调试面板" class="sw调试面板" style="display: none;">
+        <div class="面板头部">
+            <h4><i class="fas fa-cogs"></i> Service Worker 调试</h4>
+            <button onclick="toggleDebugPanel()">×</button>
         </div>
-        
-        <div class="页脚底部">
-            <p class="底部文本">
-                © 2024 食刻智能菜谱 · 开源项目 · 
-                <a href="LICENSE" class="底部链接">MIT许可证</a>
-            </p>
-            <div class="底部信息">
-                <span class="信息项">
-                    <i class="fas fa-code-branch"></i>
-                    版本: v1.0.0
-                </span>
-                <span class="信息项">
-                    <i class="fas fa-database"></i>
-                    菜谱数: <span id="页脚菜谱数">0</span>
-                </span>
-                <span class="信息项">
-                    <i class="fas fa-user-friends"></i>
-                    服务: <span id="在线用户">1</span>人在线
-                </span>
-            </div>
-        </div>
-    </footer>
-
-    <!-- 浮动按钮 -->
-    <button class="浮动按钮" id="添加菜谱按钮" onclick="显示添加菜谱弹窗()">
-        <i class="fas fa-plus 浮动图标"></i>
-    </button>
-
-    <!-- 模态框容器 -->
-    <div class="模态框容器" id="模态框容器">
-        <!-- 添加菜谱弹窗 -->
-        <div class="模态框" id="添加菜谱弹窗">
-            <div class="模态框头部">
-                <h3 class="模态框标题">
-                    <i class="fas fa-plus-circle"></i>
-                    添加新菜谱
-                </h3>
-                <button class="模态框关闭" onclick="隐藏添加菜谱弹窗()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="模态框内容">
-                <div class="添加方式选择">
-                    <p class="选择提示">选择添加方式：</p>
-                    <div class="方式选项">
-                        <button class="方式按钮" onclick="显示手动表单()">
-                            <div class="方式图标">
-                                <i class="fas fa-keyboard"></i>
-                            </div>
-                            <div class="方式文本">
-                                <div class="方式标题">手动输入</div>
-                                <div class="方式描述">在线填写表单</div>
-                            </div>
-                        </button>
-                        <button class="方式按钮" onclick="下载模板文件()">
-                            <div class="方式图标">
-                                <i class="fas fa-download"></i>
-                            </div>
-                            <div class="方式文本">
-                                <div class="方式标题">模板填写</div>
-                                <div class="方式描述">下载模板后上传</div>
-                            </div>
-                        </button>
-                    </div>
+        <div class="面板内容">
+            <div class="状态信息">
+                <div class="状态项">
+                    <span class="状态标签">状态:</span>
+                    <span id="sw状态" class="状态值">未知</span>
                 </div>
-                <div id="手动表单容器" style="display: none;">
-                    <!-- 手动表单将动态生成 -->
+                <div class="状态项">
+                    <span class="状态标签">版本:</span>
+                    <span id="sw版本" class="状态值">-</span>
+                </div>
+                <div class="状态项">
+                    <span class="状态标签">缓存:</span>
+                    <span id="sw缓存" class="状态值">-</span>
+                </div>
+                <div class="状态项">
+                    <span class="状态标签">网络:</span>
+                    <span id="sw网络" class="状态值">-</span>
                 </div>
             </div>
-        </div>
-
-        <!-- 菜谱详情弹窗 -->
-        <div class="模态框 详情模态框" id="菜谱详情弹窗">
-            <div class="模态框头部">
-                <h3 class="模态框标题" id="详情标题"></h3>
-                <button class="模态框关闭" onclick="隐藏菜谱详情()">
-                    <i class="fas fa-times"></i>
+            <div class="控制按钮">
+                <button onclick="updateServiceWorker()" class="控制按钮">
+                    <i class="fas fa-sync-alt"></i> 检查更新
                 </button>
-            </div>
-            <div class="模态框内容" id="详情内容">
-                <!-- 菜谱详情将动态生成 -->
-            </div>
-        </div>
-
-        <!-- 营养详情弹窗 -->
-        <div class="模态框" id="营养详情弹窗">
-            <div class="模态框头部">
-                <h3 class="模态框标题">
-                    <i class="fas fa-apple-alt"></i>
-                    营养分析详情
-                </h3>
-                <button class="模态框关闭" onclick="隐藏营养详情()">
-                    <i class="fas fa-times"></i>
+                <button onclick="clearSWCache()" class="控制按钮">
+                    <i class="fas fa-trash"></i> 清理缓存
                 </button>
-            </div>
-            <div class="模态框内容" id="营养详情内容">
-                <!-- 营养详情将动态生成 -->
-            </div>
-        </div>
-
-        <!-- 用户中心弹窗 -->
-        <div class="模态框" id="用户中心弹窗">
-            <div class="模态框头部">
-                <h3 class="模态框标题">
-                    <i class="fas fa-user-circle"></i>
-                    用户中心
-                </h3>
-                <button class="模态框关闭" onclick="隐藏用户中心()">
-                    <i class="fas fa-times"></i>
+                <button onclick="unregisterServiceWorker()" class="控制按钮 危险">
+                    <i class="fas fa-ban"></i> 注销
                 </button>
-            </div>
-            <div class="模态框内容">
-                <div class="用户信息" id="用户信息">
-                    <!-- 用户信息将动态生成 -->
-                </div>
             </div>
         </div>
     </div>
-
-    <!-- 通知容器 -->
-    <div class="通知容器" id="通知容器"></div>
-
-    <!-- 脚本 -->
-    <script src="脚本.js" type="module"></script>
-    <script src="导出模块/PDF导出.js"></script>
-    <script src="导出模块/图片生成.js"></script>
+    
+    <!-- 调试面板样式 -->
+    <style>
+        .sw调试面板 {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 300px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            border: 2px solid #2E8B57;
+            z-index: 9995;
+            overflow: hidden;
+        }
+        
+        .面板头部 {
+            background: linear-gradient(135deg, #2E8B57, #4ECDC4);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .面板头部 h4 {
+            margin: 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .面板头部 button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        .面板头部 button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .面板内容 {
+            padding: 16px;
+        }
+        
+        .状态信息 {
+            margin-bottom: 16px;
+        }
+        
+        .状态项 {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .状态标签 {
+            color: #7F8C8D;
+        }
+        
+        .状态值 {
+            color: #2C3E50;
+            font-weight: 500;
+        }
+        
+        .控制按钮 {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .控制按钮 button {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 2px solid #E8F5E9;
+            background: white;
+            color: #2C3E50;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .控制按钮 button:hover {
+            background: #F8FFF8;
+            border-color: #2E8B57;
+            transform: translateY(-1px);
+        }
+        
+        .控制按钮 button.危险 {
+            border-color: #FFEEBA;
+            color: #856404;
+        }
+        
+        .控制按钮 button.危险:hover {
+            background: #FFF3CD;
+            border-color: #F39C12;
+        }
+    </style>
+    
+    <!-- Service Worker 管理脚本 -->
+    <script>
+        // Service Worker 管理函数
+        function toggleDebugPanel() {
+            const panel = document.getElementById('sw调试面板');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function updateServiceWorker() {
+            if (window.swRegistration) {
+                window.swRegistration.update();
+                showNotification('正在检查更新', '请稍候...', 'info');
+            } else {
+                showNotification('错误', 'Service Worker未注册', 'error');
+            }
+        }
+        
+        async function clearSWCache() {
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    showNotification('缓存已清理', '所有缓存已被清除', 'success');
+                    updateSWStatus();
+                } catch (error) {
+                    showNotification('清理失败', error.message, 'error');
+                }
+            }
+        }
+        
+        async function unregisterServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(r => r.unregister()));
+                    
+                    // 清理缓存
+                    if ('caches' in window) {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    }
+                    
+                    showNotification('已注销', 'Service Worker已注销', 'success');
+                    window.location.reload();
+                } catch (error) {
+                    showNotification('注销失败', error.message, 'error');
+                }
+            }
+        }
+        
+        function updateSWStatus() {
+            // 更新状态显示
+            const stateEl = document.getElementById('sw状态');
+            const versionEl = document.getElementById('sw版本');
+            const cacheEl = document.getElementById('sw缓存');
+            const networkEl = document.getElementById('sw网络');
+            
+            if (navigator.serviceWorker.controller) {
+                stateEl.textContent = '已激活';
+                stateEl.style.color = '#27AE60';
+            } else if (window.swRegistration) {
+                stateEl.textContent = '已注册';
+                stateEl.style.color = '#F39C12';
+            } else {
+                stateEl.textContent = '未注册';
+                stateEl.style.color = '#E74C3C';
+            }
+            
+            versionEl.textContent = '1.0.0';
+            networkEl.textContent = navigator.onLine ? '在线' : '离线';
+            networkEl.style.color = navigator.onLine ? '#27AE60' : '#E74C3C';
+            
+            // 获取缓存信息
+            getCacheInfo().then(info => {
+                cacheEl.textContent = info || '未知';
+            });
+        }
+        
+        async function getCacheInfo() {
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    let totalSize = 0;
+                    
+                    for (const name of cacheNames) {
+                        const cache = await caches.open(name);
+                        const requests = await cache.keys();
+                        for (const request of requests) {
+                            const response = await cache.match(request);
+                            if (response) {
+                                const contentLength = response.headers.get('content-length');
+                                if (contentLength) {
+                                    totalSize += parseInt(contentLength);
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (totalSize < 1024) {
+                        return `${totalSize} B`;
+                    } else if (totalSize < 1024 * 1024) {
+                        return `${(totalSize / 1024).toFixed(1)} KB`;
+                    } else {
+                        return `${(totalSize / (1024 * 1024)).toFixed(2)} MB`;
+                    }
+                } catch (error) {
+                    return '错误';
+                }
+            }
+            return '不支持';
+        }
+        
+        // 初始化状态更新
+        setInterval(updateSWStatus, 5000);
+        
+        // 页面加载完成后显示调试面板（仅开发环境）
+        window.addEventListener('load', () => {
+            // 如果是本地环境或调试模式，显示调试面板
+            if (window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1' ||
+                window.location.search.includes('debug=true')) {
+                document.getElementById('sw调试面板').style.display = 'block';
+                updateSWStatus();
+            }
+        });
+    </script>
 </body>
 </html>
